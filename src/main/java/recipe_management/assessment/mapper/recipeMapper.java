@@ -1,7 +1,5 @@
-package my.com.recipeapi.mapper;
+package recipe_management.assessment.mapper;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class RecipeMapper extends ColumnMapper {
 

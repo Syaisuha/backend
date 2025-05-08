@@ -1,79 +1,83 @@
 package recipe_management.assessment.service.impl;
 
-import recipe_management.assessment.dto.PaginationRequestDTO;
-import recipe_management.assessment.dto.RecipeDTO;
-import recipe_management.assessment.dto.RecipeRequestDTO;
-import recipe_management.assessment.model.Recipe;
-import recipe_management.assessment.repository.jooq.RecipeRepositoryJooq;
-import recipe_management.assessment.repository.jpa.RecipeRepository;
-import recipe_management.assessment.service.IRecipeService;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import recipe_management.assessment.util.LogUtil;
+import recipe_management.assessment.dto.PaginationResponseDTO;
+import recipe_management.assessment.dto.RecipeDTO;
+import recipe_management.assessment.repository.jooq.RecipeRepositoryJooq;
+import recipe_management.assessment.service.IRecipeService;
+
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @AllArgsConstructor
 @Service
-public class RecipeService implements IRecipeService{
+public class RecipeService implements IRecipeService {
 
-    RecipeRepositoryJooq recipeRepositoryJooq;
-    RecipeRepository recipeRepository;
+  private RecipeRepositoryJooq recipeRepositoryJooq;
 
-  @Override
-  public List<String> searchRecipeName(String searchParam) {
-    log.info(LogUtil.ENTRY, "searchRecipeName");
-      List<String> searchResult = recipeRepositoryJooq.searchRecipeName(searchParam);
-      return searchResult;
+  public List<RecipeDTO> getRecipeList(String recipeID) {
+    log.info("getRecipeList: {}", recipeID);
+    try {
+      return recipeRepositoryJooq.getRecipeList(recipeID);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error fetching recipe", e);
+    }
+  }
+  public List<RecipeDTO> searchRecipesByName(String name) {
+    log.info("search Recipes: {}", name);
+    try {
+      return recipeRepositoryJooq.searchRecipes(name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error searching for recipe", e);
+    }
   }
 
-  @Override
-  public Recipe saveOrUpdateRecipe(Recipe Recipes) {
-    log.info(LogUtil.ENTRY, "saveOrUpdateRecipe");
-      return recipeRepository.save(Recipes);
-  }
-
-  @Override
-public Recipe findRecipeById(Long recipeID) {
-    log.info(LogUtil.ENTRY, "findRecipeById");
-    return recipeRepository
-        .findById(recipeID)
-        .orElseThrow(() -> new RuntimeException("Recipe not found"));
-}
-
-//  @Override
-//  public PaginationResponseDTO<Recipe> findAllRecipePage(
-//      String searchKey,
-//      String searchColumn,
-//      Long page,
-//      Long pageSize,
-//      String sort,
-//      String sortDirection) {
-//      log.info(LogUtil.ENTRY, "findAllRecipePage");
-//      Long total =
-//          recipeRepositoryJooq.searchRecipeListPage(searchKey, searchColumn, page, pageSize, sort, sortDirection);
- 
-//      Long totalPage = (long) Math.ceil((double) total / pageSize);
-//      List<Recipe> content = recipeRepositoryJooq.searchRecipePageContent(searchKey, searchColumn, page, pageSize, sort, sortDirection);
-//      return new PaginationResponseDTO<>(totalPage, total, (long) pageSize, content);
-//  }
-
-  @Override
-  public String deleteRecipe(Long recipeID) {
-    log.info(LogUtil.ENTRY, "deleteRecipe");
-      if (recipeID == null) {
-        return "Key no found";
+  public String addNewRecipe(RecipeDTO recipeDTO) {
+    log.info("add new recipe: {}", recipeDTO);
+    try {
+      if (recipeDTO == null) {
+        throw new RuntimeException("recipe cannot be null");
       }
-      recipeRepository.deleteById(recipeID);
-      return "DELETED";
+      recipeRepositoryJooq.addRecipe(recipeDTO);
+      return "Recipe added successfully";
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error adding new recipes", e);
+    }
   }
 
+  public String deleteRecipe(String name) {
+    log.info("delete Recipe: {}", name);
+    try {
+      if (name == null || name.isEmpty()) {
+        return "Recipe name is required";
+      }
+      recipeRepositoryJooq.deleteRecipe(name);
+      return "Recipe deleted successfully";
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error deleting recipe", e);
+    }
+  }
   @Override
-  public List<RecipeDTO> getRecipeList(
-      RecipeRequestDTO requestDTO, PaginationRequestDTO paginationRequestDTO) {
-    log.info(LogUtil.ENTRY, "getRecipeMasterList");
-    return recipeRepositoryJooq.getRecipeList(requestDTO, paginationRequestDTO);
+  public RecipeDTO saveOrUpdateRecipe(RecipeDTO recipeDTO) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'saveOrUpdateRecipe'");
+  }
+  @Override
+  public List<RecipeDTO> searchRecipes(String searchKey, String searchColumn, Long page, Long pageSize, String sort,
+      String sortDirection) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'searchRecipes'");
+  }
+  @Override
+  public PaginationResponseDTO searchRecipesPage(String searchKey, String searchColumn, Long page, Long pageSize,
+      String sort, String sortDirection) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'searchRecipesPage'");
   }
 }
-

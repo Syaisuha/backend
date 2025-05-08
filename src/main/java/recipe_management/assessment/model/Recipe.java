@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 public class Recipe {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY )
-    @Column(name="recipeID")
+    @Column(name="recipe_ID")
     private Integer recipeID;
 
     @Column(name="name", nullable = false)
@@ -33,25 +33,11 @@ public class Recipe {
     @Column(name="serving")
     private String serving;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @PrePersist
-protected void onCreate() {
-  createdAt = LocalDateTime.now();
-  updatedAt = createdAt;
+    protected void onCreate() {
+    createdAt = LocalDateTime.now();
 }
-
-@PreUpdate
-protected void onUpdate() {
-  updatedAt = LocalDateTime.now();
-}
-
-
-
-    
-
 }

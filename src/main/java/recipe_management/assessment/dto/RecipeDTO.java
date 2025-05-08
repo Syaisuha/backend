@@ -3,12 +3,13 @@ package recipe_management.assessment.dto;
 import java.time.LocalDateTime;
 
 public record RecipeDTO(
-    Long recipeID,
+    String recipeID,
     String name,
     String description,
-    String preparation,
-    String serving,
+    String instruction,
     String category,
-    LocalDateTime createdDate,
-    LocalDateTime updatedDate) {
+    String ingredientName,
+    String quantity,
+    String rating,
+    LocalDateTime createdDate) {
 }
