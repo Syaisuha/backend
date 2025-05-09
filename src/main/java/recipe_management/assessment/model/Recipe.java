@@ -1,8 +1,7 @@
 package recipe_management.assessment.model;
 
-import java.time.LocalDateTime;
-
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,31 +12,28 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Recipe {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY )
-    @Column(name="recipe_ID")
-    private Integer recipeID;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "recipe_id")
+  private Integer recipeId;
 
-    @Column(name="name", nullable = false)
-    private String name;
+  @Column(name = "name", nullable = false)
+  private String name;
 
-    @Column(name="description")
-    private String description;
+  @Column(name = "description")
+  private String description;
 
-    @Column(name="preparation")
-    private String preparation;
+  @Column(name = "instruction")
+  private String instruction;
 
-    @Column(name="category")
-    private String category;
+  @Column(name = "category")
+  private String category;
 
-    @Column(name="serving")
-    private String serving;
+  @Column(name = "created_date")
+  private LocalDateTime createdDate;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-    createdAt = LocalDateTime.now();
-}
+  @PrePersist
+  protected void onCreate() {
+    createdDate = LocalDateTime.now();
+  }
 }
