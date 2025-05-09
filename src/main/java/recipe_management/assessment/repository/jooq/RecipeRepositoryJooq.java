@@ -80,7 +80,7 @@ public class RecipeRepositoryJooq {
   }
 
   public List<RecipeDTO> searchRecipes(String name) {
-    log.info("Searching for recipes: {}", name);
+    log.info("Searching for recipes: {}", "searchRecipes");
     return dsl.select(
             field("r.recipeId", String.class),
             field("r.name", String.class),
@@ -96,7 +96,7 @@ public class RecipeRepositoryJooq {
         .on(field("r.recipeId").eq(field("ing.recipeId")))
         .leftJoin(table("rating").as("rat"))
         .on(field("r.recipeId").eq(field("rat.recipeId")))
-        .where(field("r.name").likeIgnoreCase("%" + name + "%")) // Added search by name
+        .where(field("r.name").likeIgnoreCase("%" + name + "%"))
         .fetchInto(RecipeDTO.class);
   }
 }
