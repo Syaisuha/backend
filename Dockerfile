@@ -1,11 +1,11 @@
 FROM gradle:8.7-jdk21 AS build
-WORKDIR /app
-COPY . /app
+WORKDIR /build
+COPY . /build
 RUN gradle build
 
 FROM eclipse-temurin:21-jdk-jammy
 
-WORKDIR /app
+WORKDIR /build
 
 COPY  /build/libs/*.jar app.jar
 
