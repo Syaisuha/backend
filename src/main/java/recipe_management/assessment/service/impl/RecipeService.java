@@ -26,58 +26,88 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecipeService implements IRecipeService {
 
     private static final Logger log = LoggerFactory.getLogger(RecipeService.class);
-    RecipeRepositoryJooq recipeRepositoryJooq;
-    RecipeRepository recipeRepository;
-    IngredientRepository ingredientRepository;
+    private final RecipeRepositoryJooq recipeRepositoryJooq;
+    private final RecipeRepository recipeRepository;
+    private final IngredientRepository ingredientRepository;
+
+  @Override
+  public List<String> searchRecipeName(String searchParam) {
+    log.info(LogUtil.ENTRY, "searchRecipeName");
+    try {
+      return recipeRepositoryJooq.searchRecipeName(searchParam);
+    } catch (Exception e) {
+      log.error("Error searching recipe names: {}", e.getMessage(), e);
+      throw new RuntimeException("Error searching recipe names", e);
+    }
+  }
+
+  @Override
+  @Transactional
+  public Recipe saveOrUpdateRecipe(Recipe recipe) {
+    log.info(LogUtil.ENTRY, "saveOrUpdateRecipe");
+    try {
+      return recipeRepository.save(recipe);
+    } catch (Exception e) {
+      log.error("Error saving recipe: {}", e.getMessage(), e);
+      throw new RuntimeException("Error saving recipe", e);
+    }
+  }
 
   public List<RecipeDTO> getRecipeList(String recipeId) {
     log.info("getRecipeList: {}", recipeId);
     try {
       return recipeRepositoryJooq.getRecipeList(recipeId);
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Error fetching recipe: {}", e.getMessage(), e);
       throw new RuntimeException("Error fetching recipe", e);
-    }
-  }
-
-  public List<RecipeDTO> searchRecipesByName(String name) {
-    log.info("search Recipes: {}", name);
-    try {
-      return recipeRepositoryJooq.searchRecipes(name);
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException("Error searching for recipe", e);
     }
   }
 
   @Override
   public Recipe findRecipeByName(String recipeName) {
     log.info(LogUtil.ENTRY, "findRecipeByName");
-    Optional<Recipe> exactMatch = recipeRepository.findByName(recipeName);
-    if (exactMatch.isPresent()) {
-        return exactMatch.get();
+    try {
+      Optional<Recipe> exactMatch = recipeRepository.findByName(recipeName);
+      if (exactMatch.isPresent()) {
+          return exactMatch.get();
+      }
+      List<Recipe> prefixMatches = recipeRepository.findByNameStartingWith(recipeName);
+      if (!prefixMatches.isEmpty()) {
+          return prefixMatches.get(0);
+      }
+      List<Recipe> containsMatches = recipeRepository.findBySimilarName(recipeName);
+      if (!containsMatches.isEmpty()) {
+          return containsMatches.get(0);
+      }
+      throw new RuntimeException("Recipe not found with name: " + recipeName);
+    } catch (Exception e) {
+      log.error("Error finding recipe by name: {}", e.getMessage(), e);
+      throw new RuntimeException("Error finding recipe by name", e);
     }
-    List<Recipe> prefixMatches = recipeRepository.findByNameStartingWith(recipeName);
-    if (!prefixMatches.isEmpty()) {
-        return prefixMatches.get(0);
-    }
-    List<Recipe> containsMatches = recipeRepository.findBySimilarName(recipeName);
-    if (!containsMatches.isEmpty()) {
-        return containsMatches.get(0);
-    }
-    throw new RuntimeException("Recipe not found with name: " + recipeName);
   }
 
   @Override
-  public String deleteRecipe(Long recipeID) {
+  @Transactional
+  public String deleteRecipe(Long recipeId) {
     log.info(LogUtil.ENTRY, "deleteRecipe");
-      if (recipeID == null) {
-        return "Key no found";
+    try {
+      if (recipeId == null) {
+        return "Recipe ID not found";
       }
-      recipeRepositoryJooq.deleteRecipe(name);
+      
+      Optional<Recipe> recipeOpt = recipeRepository.findById(recipeId);
+      if (recipeOpt.isEmpty()) {
+        return "Recipe not found with ID: " + recipeId;
+      }
+      
+      Recipe recipe = recipeOpt.get();
+      
+      ingredientRepository.deleteByRecipeId(recipe.getRecipeID());
+      recipeRepository.deleteById(recipeId);
+      
       return "Recipe deleted successfully";
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Error deleting recipe: {}", e.getMessage(), e);
       throw new RuntimeException("Error deleting recipe", e);
     }
   }
@@ -86,18 +116,27 @@ public class RecipeService implements IRecipeService {
   public List<RecipeDTO> getRecipeList(
       RecipeRequestDTO requestDTO, PaginationRequestDTO paginationRequestDTO) {
     log.info(LogUtil.ENTRY, "getRecipeList");
-    return recipeRepositoryJooq.getRecipeList(requestDTO, paginationRequestDTO);
+    try {
+      return recipeRepositoryJooq.getRecipeList(requestDTO, paginationRequestDTO);
+    } catch (Exception e) {
+      log.error("Error retrieving recipe list: {}", e.getMessage(), e);
+      throw new RuntimeException("Error retrieving recipe list", e);
+    }
   }
   
   @Override
   public PaginationResponseDTO getRecipeListPage(
       RecipeRequestDTO requestDTO, PaginationRequestDTO paginationRequestDTO) {
     log.info(LogUtil.ENTRY, "getRecipeListPage");
-
-    Long totalRecipes = recipeRepositoryJooq.getRecipeCount(requestDTO);
-    Long pageSize = paginationRequestDTO.size();
-    Long totalPages = (long) Math.ceil((double) totalRecipes / pageSize);
-    return new PaginationResponseDTO(totalPages, totalRecipes, pageSize);
+    try {
+      Long totalRecipes = recipeRepositoryJooq.getRecipeCount(requestDTO);
+      Long pageSize = paginationRequestDTO.size();
+      Long totalPages = (long) Math.ceil((double) totalRecipes / pageSize);
+      return new PaginationResponseDTO(totalPages, totalRecipes, pageSize);
+    } catch (Exception e) {
+      log.error("Error retrieving recipe page info: {}", e.getMessage(), e);
+      throw new RuntimeException("Error retrieving recipe page info", e);
+    }
   }
 
   @Override
@@ -125,6 +164,25 @@ public class RecipeService implements IRecipeService {
   @Override
   public List<Ingredient> getIngredientsByRecipeId(Integer recipeId) {
     log.info(LogUtil.ENTRY, "getIngredientsByRecipeId");
-    return ingredientRepository.findByRecipeId(recipeId);
+    try {
+      return ingredientRepository.findByRecipeId(recipeId);
+    } catch (Exception e) {
+      log.error("Error retrieving ingredients: {}", e.getMessage(), e);
+      throw new RuntimeException("Error retrieving ingredients", e);
+    }
+  }
+
+  @Override
+  public List<RecipeDTO> searchRecipesByName(
+      String name, Long page, Long pageSize, String sort, String sortDirection) {
+    log.info(LogUtil.ENTRY, "searchRecipesByName");
+    try {
+      PaginationRequestDTO paginationRequestDTO = new PaginationRequestDTO(sort, sortDirection, page, pageSize);
+      RecipeRequestDTO requestDTO = new RecipeRequestDTO(null, name, null, null, null);
+      return recipeRepositoryJooq.getRecipeList(requestDTO, paginationRequestDTO);
+    } catch (Exception e) {
+      log.error("Error searching recipes by name: {}", e.getMessage(), e);
+      throw new RuntimeException("Error searching recipes by name", e);
+    }
   }
 }

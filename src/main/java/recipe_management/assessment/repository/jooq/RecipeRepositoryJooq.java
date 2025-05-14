@@ -1,6 +1,5 @@
 package recipe_management.assessment.repository.jooq;
 
-import static org.jooq.impl.DSL.condition;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.noCondition;
 import static org.jooq.impl.DSL.table;
@@ -41,16 +40,12 @@ public class RecipeRepositoryJooq {
         condition = condition.and(field("r.category").containsIgnoreCase(requestDTO.category()));
       }
       
-      if (requestDTO.serving() != null && !requestDTO.serving().isBlank()) {
-        condition = condition.and(field("r.serving").containsIgnoreCase(requestDTO.serving()));
-      }
-      
       return dsl.selectCount()
           .from(table("recipe").as("r"))
           .where(condition)
           .fetchOneInto(Long.class);
     } catch (Exception e) {
-      log.error("Error in getRecipeCount: {}", e.getMessage());
+      log.error("Error in getRecipeCount: {}", e.getMessage(), e);
       throw new RuntimeException("Error retrieving recipe count", e);
     }
   }
@@ -73,7 +68,7 @@ public class RecipeRepositoryJooq {
               
       return select.fetchInto(String.class);
     } catch (Exception e) {
-      log.error("Error in searchRecipeName: {}", e.getMessage());
+      log.error("Error in searchRecipeName: {}", e.getMessage(), e);
       throw new RuntimeException("Error searching recipe names", e);
     }
   }
@@ -83,7 +78,7 @@ public class RecipeRepositoryJooq {
     try {
       log.info(LogUtil.ENTRY, "getRecipeList");
       
-      Field<Integer> recipeIdField = field("r.recipe_id", Integer.class).as("recipeID");
+      Field<Integer> recipeIdField = field("r.recipe_id", Integer.class).as("recipeId");
       Field<String> nameField = field("r.name", String.class).as("name");
       Field<String> descriptionField = field("r.description", String.class).as("description");
       Field<String> categoryField = field("r.category", String.class).as("category");
@@ -104,8 +99,50 @@ public class RecipeRepositoryJooq {
         condition = condition.and(field("r.category").containsIgnoreCase(requestDTO.category()));
       }
       
-      if (requestDTO.serving() != null && !requestDTO.serving().isBlank()) {
-        condition = condition.and(field("r.serving").containsIgnoreCase(requestDTO.serving()));
+      return dsl.select(
+              recipeIdField,
+              nameField,
+              descriptionField,
+              categoryField,
+              instructionField,
+              ingredientNameField,
+              preparationField,
+              createdDateField)
+          .from(table("recipe").as("r"))
+          .leftJoin(table("ingredient").as("ing"))
+          .on("r.recipe_id = ing.recipe_id")
+          .where(condition)
+          .orderBy(CoreUtilsRepositoryJooq.getOrderByField(
+              paginationRequestDTO.sort(), 
+              paginationRequestDTO.sortDirection()))
+          .offset((paginationRequestDTO.page() - 1) * paginationRequestDTO.size())
+          .limit(paginationRequestDTO.size())
+          .fetchInto(RecipeDTO.class);
+    } catch (Exception e) {
+      log.error("Error in getRecipeList: {}", e.getMessage(), e);
+      throw new RuntimeException("Error retrieving recipe list", e);
+    }
+  }
+  
+  public List<RecipeDTO> getRecipeList(String recipeId) {
+    try {
+      log.info(LogUtil.ENTRY, "getRecipeList by recipeId");
+      
+      Field<Integer> recipeIdField = field("r.recipe_id", Integer.class).as("recipeId");
+      Field<String> nameField = field("r.name", String.class).as("name");
+      Field<String> descriptionField = field("r.description", String.class).as("description");
+      Field<String> categoryField = field("r.category", String.class).as("category");
+      Field<String> instructionField = field("r.instruction", String.class).as("instruction");
+      Field<String> ingredientNameField = field("ing.ingredient_name", String.class).as("ingredientName");
+      Field<String> preparationField = 
+          field("concat(ing.quantity, ' ', ing.unit)", String.class).as("preparation");
+      Field<LocalDateTime> createdDateField = 
+          field("r.created_date", LocalDateTime.class).as("createdDate");
+      
+      Condition condition = noCondition();
+      
+      if (recipeId != null && !recipeId.isBlank()) {
+        condition = condition.and(field("r.recipe_id").eq(Integer.parseInt(recipeId)));
       }
       
       return dsl.select(
@@ -119,17 +156,69 @@ public class RecipeRepositoryJooq {
               createdDateField)
           .from(table("recipe").as("r"))
           .leftJoin(table("ingredient").as("ing"))
-          .on("r.recipe_id = CAST(ing.recipe_id AS INTEGER)")
+          .on("r.recipe_id = ing.recipe_id")
           .where(condition)
-          .orderBy(CoreUtilsRepositoryJooq.getOrderByField(
-              paginationRequestDTO.sort(), 
-              paginationRequestDTO.sortDirection()))
-          .offset((paginationRequestDTO.page() - 1) * paginationRequestDTO.size())
-          .limit(paginationRequestDTO.size())
           .fetchInto(RecipeDTO.class);
     } catch (Exception e) {
-      log.error("Error in getRecipeList: {}", e.getMessage());
-      throw new RuntimeException("Error retrieving recipe list", e);
+      log.error("Error in getRecipeList by recipeId: {}", e.getMessage(), e);
+      throw new RuntimeException("Error retrieving recipe", e);
+    }
+  }
+  
+  public List<RecipeDTO> searchRecipes(String name) {
+    try {
+      log.info(LogUtil.ENTRY, "searchRecipes by name");
+      
+      Field<Integer> recipeIdField = field("r.recipe_id", Integer.class).as("recipeId");
+      Field<String> nameField = field("r.name", String.class).as("name");
+      Field<String> descriptionField = field("r.description", String.class).as("description");
+      Field<String> categoryField = field("r.category", String.class).as("category");
+      Field<String> instructionField = field("r.instruction", String.class).as("instruction");
+      Field<String> ingredientNameField = field("ing.ingredient_name", String.class).as("ingredientName");
+      Field<String> preparationField = 
+          field("concat(ing.quantity, ' ', ing.unit)", String.class).as("preparation");
+      Field<LocalDateTime> createdDateField = 
+          field("r.created_date", LocalDateTime.class).as("createdDate");
+      
+      Condition condition = field("r.name").containsIgnoreCase(name);
+      
+      return dsl.select(
+              recipeIdField,
+              nameField,
+              descriptionField,
+              categoryField,
+              instructionField,
+              ingredientNameField,
+              preparationField,
+              createdDateField)
+          .from(table("recipe").as("r"))
+          .leftJoin(table("ingredient").as("ing"))
+          .on("r.recipe_id = ing.recipe_id")
+          .where(condition)
+          .fetchInto(RecipeDTO.class);
+    } catch (Exception e) {
+      log.error("Error in searchRecipes by name: {}", e.getMessage(), e);
+      throw new RuntimeException("Error searching for recipe", e);
+    }
+  }
+  
+  public void deleteRecipe(String name) {
+    try {
+      log.info(LogUtil.ENTRY, "deleteRecipe");
+      dsl.deleteFrom(table("ingredient"))
+         .where(field("recipe_id").in(
+             dsl.select(field("recipe_id"))
+                .from(table("recipe"))
+                .where(field("name").eq(name))
+         ))
+         .execute();
+      dsl.deleteFrom(table("recipe"))
+         .where(field("name").eq(name))
+         .execute();
+         
+    } catch (Exception e) {
+      log.error("Error in deleteRecipe: {}", e.getMessage(), e);
+      throw new RuntimeException("Error deleting recipe", e);
     }
   }
 }

@@ -20,7 +20,7 @@ public class Ingredient {
     private Integer recipeId;
 
     @Column(name = "ingredient_name")
-    private String ingredientName; 
+    private String ingredientName;
 
     @Column(name = "quantity")
     private String quantity;
@@ -28,3 +28,4 @@ public class Ingredient {
     @Column(name = "unit")
     private String unit;
 }
+

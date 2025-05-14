@@ -12,14 +12,11 @@ import recipe_management.assessment.model.Recipe;
 
 public interface IRecipeService {
     List<String> searchRecipeName(String searchParam);
+    
+    Recipe saveOrUpdateRecipe(Recipe recipe);
   
-    Recipe saveOrUpdateRecipe(Recipe Recipe);
+    String deleteRecipe(Long recipeId);
   
-    Recipe findRecipeByName(String recipeName);
-  
-    String deleteRecipe(Long recipeID);
-  
-
     List<RecipeDTO> getRecipeList(
         RecipeRequestDTO requestDTO, PaginationRequestDTO paginationRequestDTO);
   
@@ -29,5 +26,10 @@ public interface IRecipeService {
     void saveIngredients(Integer recipeId, List<IngredientDTO> ingredients);
 
     List<Ingredient> getIngredientsByRecipeId(Integer recipeId);
+    
+    List<RecipeDTO> searchRecipesByName(
+        String name, Long page, Long pageSize, String sort, String sortDirection);
+    
+    Recipe findRecipeByName(String recipeName);
 }
   
