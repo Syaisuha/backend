@@ -1,12 +1,7 @@
-package my.com.recipeapi.mapper;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
+package recipe_management.assessment.mapper;
 
 public class RecipeMapper extends ColumnMapper {
-
     public RecipeMapper() {
-        // Map DTO fields to column names
         COLUMN_MAP.put("name", "recipe_name");
         COLUMN_MAP.put("description", "recipe_description");
         COLUMN_MAP.put("category", "recipe_category");

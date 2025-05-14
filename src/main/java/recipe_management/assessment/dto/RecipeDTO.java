@@ -6,9 +6,9 @@ public record RecipeDTO(
     Long recipeID,
     String name,
     String description,
-    String preparation,
-    String serving,
     String category,
-    LocalDateTime createdDate,
-    LocalDateTime updatedDate) {
+    String instruction,
+    String ingredientName,
+    String preparation,
+    LocalDateTime createdDate) {
 }

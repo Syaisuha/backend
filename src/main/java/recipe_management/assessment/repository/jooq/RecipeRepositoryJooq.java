@@ -1,158 +1,135 @@
 package recipe_management.assessment.repository.jooq;
 
-import static org.jooq.impl.DSL.*;
+import static org.jooq.impl.DSL.condition;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.noCondition;
+import static org.jooq.impl.DSL.table;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record1;
-import org.jooq.Record4;
-import org.jooq.Record7;
-import org.jooq.SelectConditionStep;
-import org.jooq.SelectForUpdateStep;
 import org.jooq.SelectLimitPercentStep;
 import org.springframework.stereotype.Repository;
-import org.jooq.Condition;
-import lombok.extern.slf4j.Slf4j;
 import recipe_management.assessment.dto.PaginationRequestDTO;
 import recipe_management.assessment.dto.RecipeDTO;
 import recipe_management.assessment.dto.RecipeRequestDTO;
-import recipe_management.assessment.model.Recipe;
+import recipe_management.assessment.util.LogUtil;
 
 @Repository
 @Slf4j
+@AllArgsConstructor
 public class RecipeRepositoryJooq {
-    private final DSLContext dsl;
+  private final DSLContext dsl;
 
-    public RecipeRepositoryJooq(DSLContext dsl){
-        this.dsl=dsl;
+  public Long getRecipeCount(RecipeRequestDTO requestDTO) {
+    try {
+      log.info(LogUtil.ENTRY, "getRecipeCount");
+      
+      Condition condition = noCondition();
+      
+      if (requestDTO.name() != null && !requestDTO.name().isBlank()) {
+        condition = condition.and(field("r.name").containsIgnoreCase(requestDTO.name()));
+      }
+      
+      if (requestDTO.category() != null && !requestDTO.category().isBlank()) {
+        condition = condition.and(field("r.category").containsIgnoreCase(requestDTO.category()));
+      }
+      
+      if (requestDTO.serving() != null && !requestDTO.serving().isBlank()) {
+        condition = condition.and(field("r.serving").containsIgnoreCase(requestDTO.serving()));
+      }
+      
+      return dsl.selectCount()
+          .from(table("recipe").as("r"))
+          .where(condition)
+          .fetchOneInto(Long.class);
+    } catch (Exception e) {
+      log.error("Error in getRecipeCount: {}", e.getMessage());
+      throw new RuntimeException("Error retrieving recipe count", e);
     }
+  }
 
-    public List<String> searchRecipeName(String searchParam) {
-    Field<String> recipeName = field("name", String.class);
-    Field<BigDecimal> similarity =
-        field("word_similarity({0},{1})", BigDecimal.class, recipeName, searchParam);
-    SelectLimitPercentStep<Record1<String>> select =
-        dsl.select(recipeName)
-            .from(table("Recipe"))
-            .where(similarity.ge(new BigDecimal(0.1)))
-            .groupBy(recipeName)
-            .orderBy(similarity.desc())
-            .limit(10);
-    List<String> result = select.fetchInto(String.class);
-    return result;
+  public List<String> searchRecipeName(String searchParam) {
+    try {
+      log.info(LogUtil.ENTRY, "searchRecipeName");
+      
+      Field<String> recipeName = field("name", String.class);
+      Field<BigDecimal> similarity =
+          field("word_similarity({0},{1})", BigDecimal.class, recipeName, searchParam);
+      
+      SelectLimitPercentStep<Record1<String>> select =
+          dsl.select(recipeName)
+              .from(table("recipe"))
+              .where(similarity.ge(new BigDecimal(0.1)))
+              .groupBy(recipeName)
+              .orderBy(similarity.desc())
+              .limit(10);
+              
+      return select.fetchInto(String.class);
+    } catch (Exception e) {
+      log.error("Error in searchRecipeName: {}", e.getMessage());
+      throw new RuntimeException("Error searching recipe names", e);
+    }
   }
 
   public List<RecipeDTO> getRecipeList(
       RecipeRequestDTO requestDTO, PaginationRequestDTO paginationRequestDTO) {
-    Condition condition = noCondition();
-        JooqUtil.andCondition(
-            condition, field("RE.Name"), Field::containsIgnoreCase, requestDTO.name());
-    condition =
-        JooqUtil.andCondition(
-            condition, field("RE.Category"), Field::containsIgnoreCase, requestDTO.category());
-
-    Field<Long> recipeID = field("RE.recipeID", Long.class).as("recipeID");
-    Field<String> name = field("RE.Name", String.class).as("name");
-    Field<String> description = field("RE.Description", String.class).as("description");
-    Field<String> preparation =
-        field("CONCAT(ING.Name, ' ', ING.Quantity)", String.class).as("preparation");
-    Field<String> category = field("RE.Category", String.class).as("category");
-    Field<LocalDateTime> createdDate =
-        field("RE.createdDate", LocalDateTime.class).as("createdDate");
-    Field<LocalDateTime> updatedDate =
-        field("RE.updatedDate", LocalDateTime.class).as("updatedDate");
-
-    SelectForUpdateStep<
-            Record7<
-                Long,
-                String,
-                String,
-                String,
-                String,
-                LocalDateTime,
-                LocalDateTime>>
-        query =
-            dsl.select(
-                    recipeID,
-                    name,
-                    description,
-                    preparation,
-                    category,
-                    createdDate,
-                    updatedDate)
-                .from(table("Recipe RE"))
-                .leftJoin(table("Ingredient ING"))
-                .on(field("RE.ingredientID").eq(field("ING.ingredientID")))
-                .where(condition)
-                .orderBy(
-                    CoreUtilsRepositoryJooq.getOrderByField(
-                        paginationRequestDTO.sort(), paginationRequestDTO.sortDirection()))
-                .offset((paginationRequestDTO.page() - 1) * paginationRequestDTO.size())
-                .limit(paginationRequestDTO.size());
-    List<RecipeDTO> result = query.fetchInto(RecipeDTO.class);
-    return result;
-}
-//   public Long searchRecipeListPage(
-//     String searchKey,
-//     String searchColumn,
-//     Long page,
-//     Long pageSize,
-//     String sort,
-//     String sortDirection
-// ) {
-//         Field<Long> recipeID = field("recipeID", Long.class);
-//         Field<String> name = field("name", String.class);
-//         Field<String> description = field("description", String.class);
-//         Field<String> category = field("category", String.class);
-
-//         Condition condition = noCondition();
-
-//         if (searchKey != null && !searchKey.isBlank()) {
-//             if (searchColumn != null && !searchColumn.isBlank()) {
-//                 if (searchColumn.equals("name")) {
-//                     condition = condition.and(field(name).likeIgnoreCase("%" + searchKey + "%"));
-//                 } else if (searchColumn.equals("description")) {
-//                     condition = condition.and(field(description).likeIgnoreCase("%" + searchKey + "%"));
-//                 } else if (searchColumn.equals("category")) {
-//                     condition = condition.and(field(category).likeIgnoreCase("%" + searchKey + "%"));
-//                 } else {
-//                     condition = condition.and(
-//                         field(name).likeIgnoreCase("%" + searchKey + "%")
-//                             .or(field(description).likeIgnoreCase("%" + searchKey + "%"))
-//                             .or(field(category).likeIgnoreCase("%" + searchKey + "%"))
-//                     );
-//                 }
-//             } else {
-//                 condition = condition.and(
-//                     field(name).likeIgnoreCase("%" + searchKey + "%")
-//                         .or(field(description).likeIgnoreCase("%" + searchKey + "%"))
-//                         .or(field(category).likeIgnoreCase("%" + searchKey + "%"))
-//                 );
-//             }
-//         }
-
-//         SelectConditionStep<Record4<Long, String, String, String>> query =
-//             dsl.select(
-//                 Recipe.RecipeID,
-//                 Recipe.Name,
-//                 Recipe.Description,
-//                 Recipe.Category
-//             )
-//             .from(Recipe)
-//             .where(condition);
-
-//         if (sort != null && !sort.isBlank()) {
-//             if (sortDirection.equals("asc")) {
-//                 query = query.orderBy(field(sort).asc());
-//             } else {
-//                 query = query.orderBy(field(sort).desc());
-//             }
-//         }
-
-//         return query.fetch();
-//   }
-
+    try {
+      log.info(LogUtil.ENTRY, "getRecipeList");
+      
+      Field<Integer> recipeIdField = field("r.recipe_id", Integer.class).as("recipeID");
+      Field<String> nameField = field("r.name", String.class).as("name");
+      Field<String> descriptionField = field("r.description", String.class).as("description");
+      Field<String> categoryField = field("r.category", String.class).as("category");
+      Field<String> instructionField = field("r.instruction", String.class).as("instruction");
+      Field<String> ingredientNameField = field("ing.ingredient_name", String.class).as("ingredientName");
+      Field<String> preparationField = 
+          field("concat(ing.quantity, ' ', ing.unit)", String.class).as("preparation");
+      Field<LocalDateTime> createdDateField = 
+          field("r.created_date", LocalDateTime.class).as("createdDate");
+      
+      Condition condition = noCondition();
+      
+      if (requestDTO.name() != null && !requestDTO.name().isBlank()) {
+        condition = condition.and(field("r.name").containsIgnoreCase(requestDTO.name()));
+      }
+      
+      if (requestDTO.category() != null && !requestDTO.category().isBlank()) {
+        condition = condition.and(field("r.category").containsIgnoreCase(requestDTO.category()));
+      }
+      
+      if (requestDTO.serving() != null && !requestDTO.serving().isBlank()) {
+        condition = condition.and(field("r.serving").containsIgnoreCase(requestDTO.serving()));
+      }
+      
+      return dsl.select(
+              recipeIdField,
+              nameField,
+              descriptionField,
+              categoryField,
+              instructionField,
+              ingredientNameField,
+              preparationField,
+              createdDateField)
+          .from(table("recipe").as("r"))
+          .leftJoin(table("ingredient").as("ing"))
+          .on("r.recipe_id = CAST(ing.recipe_id AS INTEGER)")
+          .where(condition)
+          .orderBy(CoreUtilsRepositoryJooq.getOrderByField(
+              paginationRequestDTO.sort(), 
+              paginationRequestDTO.sortDirection()))
+          .offset((paginationRequestDTO.page() - 1) * paginationRequestDTO.size())
+          .limit(paginationRequestDTO.size())
+          .fetchInto(RecipeDTO.class);
+    } catch (Exception e) {
+      log.error("Error in getRecipeList: {}", e.getMessage());
+      throw new RuntimeException("Error retrieving recipe list", e);
+    }
+  }
 }

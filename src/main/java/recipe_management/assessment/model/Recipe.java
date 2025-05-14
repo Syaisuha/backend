@@ -14,44 +14,27 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Recipe {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY )
-    @Column(name="recipeID")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "recipe_id")
     private Integer recipeID;
 
-    @Column(name="name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name="description")
+    @Column(name = "description")
     private String description;
 
-    @Column(name="preparation")
-    private String preparation;
-
-    @Column(name="category")
+    @Column(name = "category")
     private String category;
+    
+    @Column(name = "instruction")
+    private String instruction;
 
-    @Column(name="serving")
-    private String serving;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @PrePersist
-protected void onCreate() {
-  createdAt = LocalDateTime.now();
-  updatedAt = createdAt;
-}
-
-@PreUpdate
-protected void onUpdate() {
-  updatedAt = LocalDateTime.now();
-}
-
-
-
-    
-
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }
