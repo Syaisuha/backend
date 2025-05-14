@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: recipe-explorer-backend
+    runtime: docker
+    repo: https://github.com/Syaisuha/recipe-explorer_backend.git
+    branch: main
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - "*/"
+    healthCheckPath: /actuator/health
+    plan: free
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
