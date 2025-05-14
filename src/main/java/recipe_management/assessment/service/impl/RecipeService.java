@@ -30,17 +30,24 @@ public class RecipeService implements IRecipeService {
     RecipeRepository recipeRepository;
     IngredientRepository ingredientRepository;
 
-  @Override
-  public List<String> searchRecipeName(String searchParam) {
-    log.info(LogUtil.ENTRY, "searchRecipeName");
-      List<String> searchResult = recipeRepositoryJooq.searchRecipeName(searchParam);
-      return searchResult;
+  public List<RecipeDTO> getRecipeList(String recipeId) {
+    log.info("getRecipeList: {}", recipeId);
+    try {
+      return recipeRepositoryJooq.getRecipeList(recipeId);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error fetching recipe", e);
+    }
   }
 
-  @Override
-  public Recipe saveOrUpdateRecipe(Recipe Recipes) {
-    log.info(LogUtil.ENTRY, "saveOrUpdateRecipe");
-      return recipeRepository.save(Recipes);
+  public List<RecipeDTO> searchRecipesByName(String name) {
+    log.info("search Recipes: {}", name);
+    try {
+      return recipeRepositoryJooq.searchRecipes(name);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error searching for recipe", e);
+    }
   }
 
   @Override
@@ -67,8 +74,12 @@ public class RecipeService implements IRecipeService {
       if (recipeID == null) {
         return "Key no found";
       }
-      recipeRepository.deleteById(recipeID);
-      return "DELETED";
+      recipeRepositoryJooq.deleteRecipe(name);
+      return "Recipe deleted successfully";
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw new RuntimeException("Error deleting recipe", e);
+    }
   }
 
   @Override
@@ -117,4 +128,3 @@ public class RecipeService implements IRecipeService {
     return ingredientRepository.findByRecipeId(recipeId);
   }
 }
-

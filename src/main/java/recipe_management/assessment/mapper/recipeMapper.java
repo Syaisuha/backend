@@ -1,5 +1,4 @@
 package recipe_management.assessment.mapper;
-
 public class RecipeMapper extends ColumnMapper {
     public RecipeMapper() {
         COLUMN_MAP.put("name", "recipe_name");
