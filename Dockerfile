@@ -10,6 +10,10 @@ COPY src src
 # Show permissions + contents
 RUN chmod +x gradlew && ls -l gradlew && ./gradlew --version
 
+WORKDIR /app/build
+RUN mkdir libs
+WORKDIR /app
+
 RUN ./gradlew bootJar --no-daemon
 
 FROM eclipse-temurin:21-jdk-jammy
